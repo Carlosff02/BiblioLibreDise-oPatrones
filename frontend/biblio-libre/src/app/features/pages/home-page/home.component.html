@@ -1,0 +1,5 @@
+<app-nav (loginEmitter)="recibirLogin($event)"></app-nav>
+<router-outlet></router-outlet>
+@if (isUserLogin()) {
+<app-login (loginEmitter)="recibirLogin($event)"></app-login>
+}

@@ -1,0 +1,236 @@
+@if(!isUserRegistering()){
+<div id="login-popup" tabindex="-1"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+
+  <div class="w-full max-w-md p-4">
+    <div class="relative rounded-2xl bg-white shadow-xl">
+
+   
+      <button type="button" (click)="cerrarLogin()"
+        class="absolute right-3 top-3 rounded-full p-1.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700 popup-close">
+        <svg aria-hidden="true" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+
+      <div class="px-6 py-8">
+
+        <div class="text-center mb-6">
+          <h2 class="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
+          <p class="mt-2 text-sm text-gray-600">
+            Accede para guardar tus páginas visualizadas.
+          </p>
+        </div>
+
+<form class="space-y-5" [formGroup]="loginForm" (submit)="onLogin()">
+
+  <div>
+    <label class="sr-only">Usuario o Correo</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M16 12H8m0 0H6m2 0v0m0 0h8m0 0h2m-2 0v0M12 14v6m0-6V8m0 0V6m0 2H8m4 0h4" />
+        </svg>
+      </span>
+      <input type="text" autocomplete="email"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+        placeholder="Usuario o Email"
+        formControlName="userIdOrEmail">
+    </div>
+
+    @if(loginForm.get('userIdOrEmail')?.invalid && loginForm.get('userIdOrEmail')?.touched){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * Este campo es obligatorio
+    </p>
+    }
+  </div>
+
+  <div>
+    <label class="sr-only">Contraseña</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 11c1.38 0 2.5-1.12 2.5-2.5S13.38 6 12 6s-2.5 1.12-2.5 2.5S10.62 11 12 11z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 11c0 4.97-4.03 9-9 9s-9-4.03-9-9c0-.71.09-1.39.26-2.05A9.003 9.003 0 01112 3a9.003 9.003 0 019 5.95c.17.66.26 1.34.26 2.05z" />
+        </svg>
+      </span>
+      <input type="password" autocomplete="current-password"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+        placeholder="Contraseña"
+        formControlName="contraseña">
+    </div>
+
+     @if(loginForm.get('contraseña')?.invalid && loginForm.get('contraseña')?.touched){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * La contraseña es obligatoria
+    </p>
+    }
+  </div>
+
+  <button type="submit"
+    class="w-full rounded-lg bg-black py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:bg-gray-400"
+    [disabled]="loginForm.invalid">
+    Continuar
+  </button>
+</form>
+
+
+        <div class="mt-6 text-center text-sm text-gray-600">
+          ¿No tienes cuenta?
+          <button class="cursor-pointer font-medium text-blue-600 hover:underline" (click)="isUserRegistering.set(true)">Registrarse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
+@else{
+<div id="register-popup" tabindex="-1"
+  class="fixed flex inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="w-full flex items-center justify-center max-w-md p-4">
+    <div class="relative rounded-2xl bg-white shadow-xl">
+
+      <button type="button" (click)="cerrarLogin()"
+        class="absolute right-3 top-3 rounded-full p-1.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700 popup-close-register">
+        <svg aria-hidden="true" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+
+      <div class="px-6 py-8">
+
+        <div class="text-center mb-6">
+          <h2 class="text-3xl font-bold text-gray-900">Crear Cuenta</h2>
+          <p class="mt-2 text-sm text-gray-600">
+            Regístrate para comenzar a guardar tus páginas.
+          </p>
+        </div>
+
+        <form class="space-y-5" [formGroup]="registerForm" (submit)="onRegister()">
+
+
+
+          <div>
+            <label class="sr-only">Correo</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 12H8m0 0H6m2 0v0m0 0h8m0 0h2m-2 0v0M12 14v6m0-6V8m0 0V6m0 2H8m4 0h4" />
+                </svg>
+              </span>
+              <input type="email"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+                placeholder="Correo Electrónico"
+                formControlName="email">
+            </div>
+          </div>
+          @if(registerForm.get('email')?.invalid && registerForm.get('email')?.touched){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * Este campo es obligatorio
+    </p>
+    }
+
+          <!-- Usuario -->
+          <div>
+            <label class="sr-only">Usuario</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 12H8m0 0H6m2 0v0m0 0h8m0 0h2m-2 0v0M12 14v6m0-6V8m0 0V6m0 2H8m4 0h4" />
+                </svg>
+              </span>
+              <input type="text"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+                placeholder="Nombre de Usuario"
+                formControlName="userId">
+            </div>
+          </div>
+          @if(registerForm.get('userId')?.invalid && registerForm.get('userId')?.touched){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * Este campo es obligatorio
+    </p>
+    }
+          <div>
+            <label class="sr-only">Contraseña</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 11c1.38 0 2.5-1.12 2.5-2.5S13.38 6 12 6s-2.5 1.12-2.5 2.5S10.62 11 12 11z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11c0 4.97-4.03 9-9 9s-9-4.03-9-9c0-.71.09-1.39.26-2.05A9.003 9.003 0 0112 3a9.003 9.003 0 019 5.95c.17.66.26 1.34.26 2.05z" />
+                </svg>
+              </span>
+              <input type="password"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+                placeholder="Contraseña"
+                formControlName="contraseña">
+            </div>
+          </div>
+          @if(registerForm.get('contraseña')?.invalid && registerForm.get('contraseña')?.touched){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * La contraseña es obligatoria
+    </p>
+    }
+          <div>
+            <label class="sr-only">Confirmar Contraseña</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 11c1.38 0 2.5-1.12 2.5-2.5S13.38 6 12 6s-2.5 1.12-2.5 2.5S10.62 11 12 11z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11c0 4.97-4.03 9-9 9s-9-4.03-9-9c0-.71.09-1.39.26-2.05A9.003 9.003 0 0112 3a9.003 9.003 0 019 5.95c.17.66.26 1.34.26 2.05z" />
+                </svg>
+              </span>
+              <input type="password"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 pl-10 shadow-sm focus:ring-2 focus:ring-black outline-none"
+                placeholder="Confirmar Contraseña"
+                formControlName="confirmPassword">
+            </div>
+          </div>
+          @if(passwordMatchValidator(registerForm)){
+    <p
+       class="text-red-600 text-sm mt-1">
+      * Las contraseñas no coinciden
+    </p>
+    }
+
+          <!-- Submit -->
+          <button type="submit"
+            class="w-full rounded-lg bg-blue-600 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:bg-gray-400">
+            Crear Cuenta
+          </button>
+
+        </form>
+
+        <!-- Footer -->
+        <div class="mt-6 text-center text-sm text-gray-600">
+          ¿Ya tienes cuenta?
+          <a class="cursor-pointer font-medium text-blue-600 hover:underline" (click)="isUserRegistering.set(false)">Iniciar sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}

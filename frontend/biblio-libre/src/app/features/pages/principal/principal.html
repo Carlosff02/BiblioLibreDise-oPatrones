@@ -1,0 +1,99 @@
+
+    <section class="hero-section text-white py-24 md:py-36">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">Tu Puerta de Acceso a la Literatura Universal</h2>
+            <p class="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-8">Encuentra, lee y descarga más de 70,000 libros de dominio público. Totalmente gratis.</p>
+            <div class="max-w-2xl mx-auto">
+                <div class="relative">
+                    <input type="search" [(ngModel)]="titulo" placeholder="Buscar por título o autor..." class="w-full py-4 pl-5 pr-16 rounded-full text-gray-900 border-2 border-transparent focus:border-indigo-500 focus:ring-indigo-500 transition duration-300">
+                    <button routerLink="busqueda" [queryParams]="{ titulo: titulo }"class="absolute inset-y-0 right-0 flex items-center justify-center w-14 h-full bg-indigo-600 text-white rounded-r-full hover:bg-indigo-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <main class="container mx-auto px-6 py-16">
+
+
+        <section id="popular" class="mb-20">
+            <h3 class="text-3xl font-bold text-gray-900 mb-8">Los Más Populares</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+
+
+                 @for (libro of libros.value(); track $index) {
+                  <div [routerLink]="['/busqueda/visor', libro.titulo]" class="book-card bg-white rounded-lg shadow-md overflow-hidden cursor-pointer">
+                    <img [src]="libro.imgSrc" alt="Portada de Frankenstein" class="w-full h-auto object-cover">
+                    <div class="p-4">
+                        <h4 class="font-bold text-md truncate" [title]="libro.titulo">{{libro.titulo}}</h4>
+                        <p class="text-sm text-gray-600">{{ libro.autor?.nombre || 'Autor desconocido' }}</p>
+                    </div>
+                </div>
+                 }
+
+
+            </div>
+        </section>
+
+
+        <section id="categories" class="mb-16">
+            <h3 class="text-3xl font-bold text-gray-900 mb-8">Explorar por Lenguaje</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <!-- Category Cards -->
+                <a routerLink="busqueda"  [queryParams]="{ idioma: 'español' }" class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark mb-3 text-indigo-500">
+                      <line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                    <h4 class="font-semibold">Español</h4>
+                </a>
+                 <a routerLink="busqueda"  [queryParams]="{ idioma: 'english' }" class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark mb-3 text-indigo-500">
+                      <line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                    <h4 class="font-semibold">Inglés</h4>
+                </a>
+                <a routerLink="busqueda"  [queryParams]="{ idioma: 'french' }" class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark mb-3 text-indigo-500">
+                      <line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                    <h4 class="font-semibold">Francés</h4>
+                </a>
+                <a routerLink="busqueda"  [queryParams]="{ idioma: 'japones' }" class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark mb-3 text-indigo-500">
+                      <line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                    <h4 class="font-semibold">Japonés</h4>
+                </a>
+
+            </div>
+        </section>
+    </main>
+
+
+    <footer class="bg-gray-900 text-white mt-16">
+        <div class="container mx-auto px-6 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-2">BiblioLibre</h3>
+                    <p class="text-gray-400">Democratizando el acceso a la cultura y la educación para todos.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Enlaces Rápidos</h4>
+                    <ul class="space-y-2">
+                        <li><a routerLink="busqueda" class="text-gray-400 hover:text-white">Buscar</a></li>
+                        <li><a href="#popular" class="text-gray-400 hover:text-white">Libros Populares</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Sobre Nosotros</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Legal</h4>
+                     <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Términos de Servicio</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Política de Privacidad</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-6 text-center text-gray-500">
+                <p>&copy; 2025 BiblioLibre. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
