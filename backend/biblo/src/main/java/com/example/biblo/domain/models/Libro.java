@@ -4,6 +4,7 @@ import com.example.biblo.application.dto.LibroDTO;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Libro {
 
@@ -42,28 +44,6 @@ public class Libro {
     @Column(name = "categoria")
     private List<String> categorias;
 
-
-    public Libro(LibroDTO libro) {
-        this.idgutendex=libro.id();
-        this.titulo = libro.titulo();
-        this.descargas = libro.descargas();
-        this.idioma = libro.idioma() != null && !libro.idioma().isEmpty()
-                ? libro.idioma().get(0)
-                : "desconocido";
-        this.descripcion = (libro.summaries() != null && !libro.summaries().isEmpty())
-                ? libro.summaries().get(0)
-                : null;
-        this.imgSrc = libro.formatos() != null ? libro.formatos().imageJpeg() : null;
-        this.textHtml = libro.formatos() != null ? libro.formatos().textHtml() : null;
-        this.epub = libro.formatos() != null ? libro.formatos().epub() : null;
-
-        this.categorias = libro.categorias();
-
-
-        if (libro.autor() != null && !libro.autor().isEmpty()) {
-            this.autor = new Autor(libro.autor().get(0));
-        }
-    }
 
 
 }
