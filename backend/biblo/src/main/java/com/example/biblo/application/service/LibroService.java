@@ -2,10 +2,14 @@ package com.example.biblo.application.service;
 
 import com.example.biblo.application.dto.AutorDTO;
 import com.example.biblo.application.dto.LibroDTO;
+import com.example.biblo.application.dto.ResultadoBusquedaDTO;
+import com.example.biblo.domain.factory.AutorFactory;
+import com.example.biblo.domain.factory.LibroFactory;
 import com.example.biblo.domain.models.Autor;
 import com.example.biblo.domain.models.Libro;
 import com.example.biblo.domain.models.LibroPagina;
 import com.example.biblo.domain.models.PaginasGuardadas;
+import com.example.biblo.infraestructure.external.gutendex.GutendexClient;
 import com.example.biblo.infraestructure.repository.AutorRepository;
 import com.example.biblo.infraestructure.repository.LibroRepository;
 import com.example.biblo.infraestructure.repository.PaginasGuardadasRepository;
@@ -17,6 +21,7 @@ import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -37,19 +42,19 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class LibroService {
 
-    private LibroRepository libroRepository;
-    private AutorRepository autorRepository;
+    private final GutendexClient gutendexClient;
+
+    private final LibroFactory libroFactory;
+    private final AutorFactory autorFactory;
+    private final LibroRepository libroRepository;
+    private final AutorRepository autorRepository;
     private final PaginasGuardadasRepository paginasGuardadasRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public LibroService(LibroRepository libroRepository, AutorRepository autorRepository, PaginasGuardadasRepository paginasGuardadasRepository) {
-        this.libroRepository = libroRepository;
-        this.autorRepository = autorRepository;
-        this.paginasGuardadasRepository = paginasGuardadasRepository;
-    }
 
     @Transactional
     public Page<Libro> buscarPorIdioma(String idioma, int page) throws IOException, InterruptedException {
@@ -110,13 +115,13 @@ public class LibroService {
         );
 
         for (LibroDTO libroDTO : datos) {
-            Libro libro = new Libro(libroDTO);
+            Libro libro = libroFactory.crearLibroDesdeDTO(libroDTO);
 
             Autor autor = null;
 
             if (libroDTO.autor() != null && !libroDTO.autor().isEmpty()) {
                 AutorDTO autorDTO = libroDTO.autor().get(0);
-                autor = new Autor(autorDTO);
+                autor = autorFactory.crearAutorDesdeDTO(autorDTO);
 
 
                 String nombreOriginal = autor.getNombre();
@@ -231,7 +236,7 @@ public class LibroService {
 
         JsonNode primerLibro = resultsNode.get(0);
         LibroDTO datos = mapper.treeToValue(primerLibro, LibroDTO.class);
-        Libro libro = new Libro(datos);
+        Libro libro = libroFactory.crearLibroDesdeDTO(datos);
 
 
         if (datos.summaries() != null && !datos.summaries().isEmpty()) {
@@ -242,7 +247,7 @@ public class LibroService {
 
         if (datos.autor() != null && !datos.autor().isEmpty()) {
             AutorDTO autorDTO = datos.autor().get(0);
-            Autor autor = new Autor(autorDTO);
+            Autor autor = autorFactory.crearAutorDesdeDTO(autorDTO);
 
             String nombreOriginal = autor.getNombre();
             String[] partes = nombreOriginal.split(",");
@@ -486,17 +491,13 @@ public class LibroService {
 
     @Transactional
     public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page)
-            throws IOException, InterruptedException {
+            throws IOException {
 
         String tituloQ = titulo != null ? titulo.trim().toLowerCase() : "";
         String autorQ = autor != null ? autor.trim().toLowerCase() : "";
         String idiomaQ = idioma != null ? idioma.trim().toLowerCase() : "";
 
-
         int pageSize = 32;
-        String baseUrl = "https://gutendex.com/books/";
-        StringBuilder urlBuilder = new StringBuilder(baseUrl);
-        urlBuilder.append("?page=").append(page);
 
         if (!idiomaQ.isEmpty() && !idiomaQ.equals("todos")) {
             switch (idiomaQ.toLowerCase()) {
@@ -521,71 +522,40 @@ public class LibroService {
                 case "hungarian", "hungaro", "hu" -> idiomaQ = "hu";
                 case "czech", "checo", "cs" -> idiomaQ = "cs";
             }
-            urlBuilder.append("&languages=").append(idiomaQ);
         }
-        Page<Libro> librosBuscar = buscarLibrosEnBd(titulo,autor,idioma,idiomaQ, page);
-        if(librosBuscar!=null){
+
+        Page<Libro> librosBuscar = buscarLibrosEnBd(titulo, autor, idioma, idiomaQ, page);
+        if (librosBuscar != null) {
             return librosBuscar;
         }
+        // Utilizando el Patron Adapter - Patron Estructural
+        ResultadoBusquedaDTO resultado =
+                gutendexClient.buscar(tituloQ, autorQ, idiomaQ, page);
 
+        long totalElements = resultado.total();
+        List<LibroDTO> datos = resultado.resultados();
+        String urlConsultada = resultado.urlConsultada();
 
-
-
-        StringBuilder searchQuery = new StringBuilder();
-        if (!tituloQ.isEmpty()) searchQuery.append(tituloQ);
-        if (!autorQ.isEmpty()) {
-            if (searchQuery.length() > 0) searchQuery.append(" ");
-            searchQuery.append(autorQ);
-        }
-        if (searchQuery.length() > 0) {
-            urlBuilder.append("&search=")
-                    .append(URLEncoder.encode(searchQuery.toString(), StandardCharsets.UTF_8));
-        }
-
-        String url = urlBuilder.toString();
-        System.out.println("🌍 URL generada: " + url);
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .GET()
-                .build();
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String json = response.body();
-
-        if (json == null || json.isEmpty()) {
-            System.out.println("⚠️ Respuesta vacía de Gutendex.");
+        if (datos == null || datos.isEmpty()) {
             return Page.empty();
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(json);
-        long totalElements = root.path("count").asLong(0);
-        JsonNode resultsNode = root.path("results");
-
-        if (resultsNode == null || !resultsNode.isArray() || resultsNode.isEmpty()) {
-
-            return Page.empty();
-        }
-
-        List<LibroDTO> datos = Arrays.asList(mapper.treeToValue(resultsNode, LibroDTO[].class));
         List<Libro> libros = new ArrayList<>();
         List<LibroPagina> libroPaginas = new ArrayList<>();
 
         PaginasGuardadas paginaConsultada = new PaginasGuardadas(
-                null, idiomaQ, page, totalElements, LocalDateTime.now(), url, libroPaginas
+                null, idiomaQ, page, totalElements, LocalDateTime.now(), urlConsultada, libroPaginas
         );
 
         for (LibroDTO libroDTO : datos) {
 
-            Libro libro = new Libro(libroDTO);
+            Libro libro = libroFactory.crearLibroDesdeDTO(libroDTO);
 
 
             if (libroDTO.autor() != null && !libroDTO.autor().isEmpty()) {
 
                 AutorDTO autorDTO = libroDTO.autor().get(0);
-                Autor autorEntity = new Autor(autorDTO);
+                Autor autorEntity = autorFactory.crearAutorDesdeDTO(autorDTO);
 
                 String nombreOriginal = autorEntity.getNombre();
                 String[] partes = nombreOriginal.split(",");
@@ -602,42 +572,38 @@ public class LibroService {
                 libro.setCategorias(new ArrayList<>());
                 libro.setAutor(autorEntity);
             }
-                Optional<Libro> libroBuscar = libroRepository.findByTitulo(libro.getTitulo().trim());
 
-                if (libroBuscar.isPresent()) {
-                    libro = libroBuscar.get();
-
-                }
-
+            Optional<Libro> libroBuscar = libroRepository.findByTitulo(libro.getTitulo().trim());
+            if (libroBuscar.isPresent()) {
+                libro = libroBuscar.get();
+            }
 
             Libro finalLibro = libro;
+
             boolean yaExiste = paginaConsultada.getLibroPaginas().stream()
                     .anyMatch(lp -> {
                         Libro libroExistente = lp.getLibro();
-
 
                         if (libroExistente.getIdlibro() == null || finalLibro.getIdlibro() == null) {
                             return libroExistente.getTitulo().equalsIgnoreCase(finalLibro.getTitulo());
                         }
 
-
                         return libroExistente.getIdlibro().equals(finalLibro.getIdlibro());
                     });
-
 
             if (!yaExiste) {
                 LibroPagina libroPagina = new LibroPagina(null, libro, paginaConsultada);
                 paginaConsultada.getLibroPaginas().add(libroPagina);
             }
+
             libros.add(libro);
         }
-
-
 
         paginasGuardadasRepository.save(paginaConsultada);
 
         return new PageImpl<>(libros, PageRequest.of(page - 1, pageSize), totalElements);
     }
+
 
 
     private Page<Libro> construirPagina(Optional<List<Libro>> librosOpt, int page, int pageSize) {
