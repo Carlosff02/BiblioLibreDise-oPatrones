@@ -45,8 +45,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LibroService {
 
+    // Principio de Inversión de Dependencias
     private final GutendexClient gutendexClient;
-
     private final LibroFactory libroFactory;
     private final AutorFactory autorFactory;
     private final LibroRepository libroRepository;
@@ -57,102 +57,112 @@ public class LibroService {
 
 
     @Transactional
-    public Page<Libro> buscarPorIdioma(String idioma, int page) throws IOException, InterruptedException {
-        if (idioma.equalsIgnoreCase("español")) {
-            idioma = "es";
-        } else if (idioma.equalsIgnoreCase("english")) {
-            idioma = "en";
-        } else {
-            return Page.empty();
-        }
+    public Page<Libro> buscarPorIdioma(String idioma, int page)
+            throws IOException, InterruptedException {
+
+        String idiomaNormalizado = normalizarIdioma(idioma);
+        if (idiomaNormalizado == null) return Page.empty();
 
         int pageSize = 32;
 
-        Optional<PaginasGuardadas> paginaGuardadaBuscar =
-                paginasGuardadasRepository.findByIdiomaAndNumeroPagina(idioma, page);
+        Optional<PaginasGuardadas> paginaGuardada =
+                paginasGuardadasRepository.findByIdiomaAndNumeroPagina(idiomaNormalizado, page);
 
-        if (paginaGuardadaBuscar.isPresent()) {
-            List<Libro> librosGuardados = paginaGuardadaBuscar.get()
-                    .getLibroPaginas()
-                    .stream()
-                    .map(LibroPagina::getLibro)
-                    .toList();
-            return new PageImpl<>(librosGuardados, PageRequest.of(page - 1, pageSize), paginaGuardadaBuscar.get().getTotalRegistros());
+        if (paginaGuardada.isPresent()) {
+            return construirPaginaDesdeCache(paginaGuardada.get(), pageSize);
         }
 
-        String urlStr = "https://gutendex.com/books/?languages=" + idioma + "&page=" + page;
-        System.out.println(urlStr);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(urlStr))
-                .build();
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String json = response.body();
-
-        if (json.isEmpty()) {
-            System.out.println("No se encontraron libros.");
-            return Page.empty();
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(json);
-
-        long totalElements = root.get("count").asLong();
-        JsonNode resultsNode = root.get("results");
-
-        if (resultsNode == null || !resultsNode.isArray() || resultsNode.isEmpty()) {
-
-            return Page.empty();
-        }
-
-        List<LibroDTO> datos = Arrays.asList(mapper.treeToValue(resultsNode, LibroDTO[].class));
-        List<Libro> libros = new ArrayList<>();
-        List<LibroPagina> libroPaginas= new ArrayList<>();
-
-        PaginasGuardadas paginaConsultada = new PaginasGuardadas(
-                null, idioma, page, totalElements, LocalDateTime.now(), urlStr, libroPaginas
+        ResultadoBusquedaDTO resultado = gutendexClient.buscar(
+                null, null, idiomaNormalizado, page
         );
 
-        for (LibroDTO libroDTO : datos) {
-            Libro libro = libroFactory.crearLibroDesdeDTO(libroDTO);
+        if (resultado.resultados().isEmpty()) {
+            return Page.empty();
+        }
 
-            Autor autor = null;
+        List<Libro> libros = procesarLibros(resultado.resultados());
+        libroRepository.saveAll(libros);
 
-            if (libroDTO.autor() != null && !libroDTO.autor().isEmpty()) {
-                AutorDTO autorDTO = libroDTO.autor().get(0);
-                autor = autorFactory.crearAutorDesdeDTO(autorDTO);
+        guardarPagina(resultado, libros, idiomaNormalizado, page);
 
+        return new PageImpl<>(libros, PageRequest.of(page - 1, pageSize), resultado.total());
+    }
 
-                String nombreOriginal = autor.getNombre();
-                String[] partes = nombreOriginal.split(",");
-                if (partes.length == 2) {
-                    String apellido = partes[0].trim();
-                    String nombre = partes[1].trim();
-                    autor.setNombre(nombre + " " + apellido);
-                }
+    private String normalizarIdioma(String idioma) {
+        return switch (idioma.toLowerCase()) {
+            case "español" -> "es";
+            case "english" -> "en";
+            default -> null;
+        };
+    }
 
+    private Page<Libro> construirPaginaDesdeCache(PaginasGuardadas pagina, int pageSize) {
 
-                Autor finalAutor = autor;
-                autor = autorRepository.findByNombre(autor.getNombre())
-                        .orElseGet(() -> autorRepository.save(finalAutor));
-            }
+        List<Libro> libros = pagina.getLibroPaginas()
+                .stream()
+                .map(LibroPagina::getLibro)
+                .toList();
 
+        return new PageImpl<>(
+                libros,
+                PageRequest.of(pagina.getNumeroPagina() - 1, pageSize),
+                pagina.getTotalRegistros()
+        );
+    }
+
+    private List<Libro> procesarLibros(List<LibroDTO> dtos) {
+
+        List<Libro> libros = new ArrayList<>();
+
+        for (LibroDTO dto : dtos) {
+
+            Libro libro = libroFactory.crearLibroDesdeDTO(dto);
+
+            Autor autor = procesarAutor(dto);
             libro.setAutor(autor);
+
             libros.add(libro);
         }
 
-
-        paginasGuardadasRepository.save(paginaConsultada);
-        libroRepository.saveAll(libros);
-
-        System.out.println("Libros guardados: " + libros.size());
-
-
-        return new PageImpl<>(libros, PageRequest.of(page - 1, pageSize), totalElements);
+        return libros;
     }
 
+    private Autor procesarAutor(LibroDTO dto) {
 
+        if (dto.autor() == null || dto.autor().isEmpty()) return null;
+
+        Autor autor = autorFactory.crearAutorDesdeDTO(dto.autor().get(0));
+
+        String[] partes = autor.getNombre().split(",");
+        if (partes.length == 2) {
+            autor.setNombre(partes[1].trim() + " " + partes[0].trim());
+        }
+
+        Autor finalAutor = autor;
+
+        return autorRepository.findByNombre(autor.getNombre())
+                .orElseGet(() -> autorRepository.save(finalAutor));
+    }
+
+    private void guardarPagina(ResultadoBusquedaDTO resultado, List<Libro> libros,
+                               String idioma, int page) {
+
+        List<LibroPagina> libroPaginas = libros.stream()
+                .map(libro -> new LibroPagina(null, libro, null))
+                .toList();
+
+        PaginasGuardadas pagina = new PaginasGuardadas(
+                null,
+                idioma,
+                page,
+                resultado.total(),
+                LocalDateTime.now(),
+                resultado.urlConsultada(),
+                libroPaginas
+        );
+
+        paginasGuardadasRepository.save(pagina);
+    }
 
 
     @Transactional
@@ -584,11 +594,11 @@ public class LibroService {
                     .anyMatch(lp -> {
                         Libro libroExistente = lp.getLibro();
 
-                        if (libroExistente.getIdlibro() == null || finalLibro.getIdlibro() == null) {
+                        if (libroExistente.getId() == null || finalLibro.getId() == null) {
                             return libroExistente.getTitulo().equalsIgnoreCase(finalLibro.getTitulo());
                         }
 
-                        return libroExistente.getIdlibro().equals(finalLibro.getIdlibro());
+                        return libroExistente.getId().equals(finalLibro.getId());
                     });
 
             if (!yaExiste) {
