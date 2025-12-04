@@ -9,6 +9,7 @@ import com.example.biblo.domain.models.Autor;
 import com.example.biblo.domain.models.Libro;
 import com.example.biblo.domain.models.LibroPagina;
 import com.example.biblo.domain.models.PaginasGuardadas;
+import com.example.biblo.domain.observer.LibroObservable;
 import com.example.biblo.domain.service.ILibroCacheService;
 import com.example.biblo.domain.service.ILibroService;
 import com.example.biblo.domain.service.ITraduccionService;
@@ -65,6 +66,8 @@ public class LibroServiceImpl implements ILibroService {
     private EntityManager entityManager;
     private final Normalizer textoNormalizer = new TextNormalizer();
     private final Normalizer idiomaNormalizer = new IdiomaNormalizer();
+    private final LibroObservable observable;
+
     private final StrategySelector strategySelector;
 
 
@@ -296,6 +299,8 @@ public class LibroServiceImpl implements ILibroService {
 
 
         libroRepository.save(libro);
+        observable.notifyObservers(libro);
+
         System.out.println("💾 Libro guardado: " + libro.getTitulo());
 
         return libro;

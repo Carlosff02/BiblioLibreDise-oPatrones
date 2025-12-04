@@ -9,21 +9,27 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface PaginasGuardadasRepository extends JpaRepository<PaginasGuardadas, Long> {
+
     @EntityGraph(attributePaths = {
-            "libros",
-            "libros.autor"
+            "libroPaginas",
+            "libroPaginas.libro",
+            "libroPaginas.libro.autor"
     })
     Optional<PaginasGuardadas> findByIdiomaAndNumeroPagina(String idioma, Integer numeroPagina);
 
+
+    @EntityGraph(attributePaths = {
+            "libroPaginas",
+            "libroPaginas.libro",
+            "libroPaginas.libro.autor"
+    })
     @Query(value = """
             SELECT p.*
-                FROM paginas_guardadas p
-                WHERE p.idioma = :idioma
-                AND p.numero_pagina = :page
+            FROM paginas_guardadas p
+            WHERE p.idioma = :idioma
+            AND p.numero_pagina = :page
     """, nativeQuery = true)
     Optional<PaginasGuardadas> findByIdiomaAndNumeroPaginaConLibrosYAutores(
             @Param("idioma") String idioma,
             @Param("page") Integer page);
-
-
 }
