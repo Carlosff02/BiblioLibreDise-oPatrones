@@ -13,6 +13,8 @@ import com.example.biblo.domain.service.ILibroCacheService;
 import com.example.biblo.domain.service.ILibroService;
 import com.example.biblo.domain.service.ITraduccionService;
 import com.example.biblo.domain.service.Normalizer;
+import com.example.biblo.domain.strategy.IStrategyBusqueda;
+import com.example.biblo.domain.strategy.StrategySelector;
 import com.example.biblo.infraestructure.external.gutendex.GutendexClient;
 import com.example.biblo.infraestructure.repository.AutorRepository;
 import com.example.biblo.infraestructure.repository.LibroRepository;
@@ -63,6 +65,7 @@ public class LibroServiceImpl implements ILibroService {
     private EntityManager entityManager;
     private final Normalizer textoNormalizer = new TextNormalizer();
     private final Normalizer idiomaNormalizer = new IdiomaNormalizer();
+    private final StrategySelector strategySelector;
 
 
     @Transactional
@@ -446,19 +449,32 @@ public class LibroServiceImpl implements ILibroService {
 
     }
 
-    private Page<Libro> buscarLibrosEnBd(String titulo, String autor, String idioma,String idiomaQ, int page){
+
+
+    private String normalizarTexto(String valor) {
+        return valor != null ? valor.trim().toLowerCase() : "";
+    }
+
+
+
+
+
+    public Page<Libro> buscarLibrosEnBd(String titulo, String autor, String idioma, String idiomaQ, int page) {
         String tituloQ = titulo != null ? titulo.trim().toLowerCase() : "";
         String autorQ = autor != null ? autor.trim().toLowerCase() : "";
         int pageSize = 32;
+
         System.out.println(idiomaQ);
         System.out.println(StringUtils.hasText(idioma));
         System.out.println(StringUtils.hasText(autor));
         System.out.println(StringUtils.hasText(titulo));
 
+        // 🔹 Buscar por idioma solamente
         if (StringUtils.hasText(idioma) && !StringUtils.hasText(autor) && !StringUtils.hasText(titulo)) {
             System.out.println("buscar por idioma");
-            System.out.println("idioma "+idiomaQ);
-            System.out.println("page "+page);
+            System.out.println("idioma " + idiomaQ);
+            System.out.println("page " + page);
+
             Optional<PaginasGuardadas> paginaGuardadaBuscar =
                     paginasGuardadasRepository.findByIdiomaAndNumeroPaginaConLibrosYAutores(idiomaQ, page);
 
@@ -478,132 +494,38 @@ public class LibroServiceImpl implements ILibroService {
             }
         }
 
-
+        // 🔹 Buscar por idioma + autor
         else if (StringUtils.hasText(idioma) && StringUtils.hasText(autor) && !StringUtils.hasText(titulo)) {
             Optional<List<Libro>> librosPorAutor = libroRepository.buscarPorIdiomaYAutor(idiomaQ, autorQ);
 
-
-            if(librosPorAutor.isPresent() && !librosPorAutor.get().isEmpty()){
-
+            if (librosPorAutor.isPresent() && !librosPorAutor.get().isEmpty()) {
                 return construirPagina(librosPorAutor, page, pageSize);
             }
         }
 
-
+        // 🔹 Buscar por idioma + título
         else if (StringUtils.hasText(idioma) && !StringUtils.hasText(autor) && StringUtils.hasText(titulo)) {
-            Optional<List<Libro>> librosPorTitulo = libroRepository.buscarPorIdiomaYTituloOAutor(idiomaQ, tituloQ,tituloQ);
-            if(librosPorTitulo.isPresent()&&!librosPorTitulo.get().isEmpty()) {
+            Optional<List<Libro>> librosPorTitulo =
+                    libroRepository.buscarPorIdiomaYTituloOAutor(idiomaQ, tituloQ, tituloQ);
+
+            if (librosPorTitulo.isPresent() && !librosPorTitulo.get().isEmpty()) {
                 return construirPagina(librosPorTitulo, page, pageSize);
             }
         }
 
-
+        // 🔹 Buscar por idioma + autor + título
         else if (StringUtils.hasText(idioma) && StringUtils.hasText(autor) && StringUtils.hasText(titulo)) {
             Optional<List<Libro>> librosPorAmbos =
                     libroRepository.buscarPorIdiomaAutorYTitulo(idiomaQ, tituloQ, autorQ);
-            if(librosPorAmbos.isPresent()&&!librosPorAmbos.isEmpty()) {
+
+            if (librosPorAmbos.isPresent() && !librosPorAmbos.get().isEmpty()) {
                 return construirPagina(librosPorAmbos, page, pageSize);
             }
         }
+
         return null;
     }
 
-    private String normalizarTexto(String valor) {
-        return valor != null ? valor.trim().toLowerCase() : "";
-    }
-
-
-
-
-
-    @Transactional
-    public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page) {
-
-        String tituloQ = textoNormalizer.normalize(titulo);
-        String autorQ  = textoNormalizer.normalize(autor);
-        String idiomaQ = idiomaNormalizer.normalize(idioma);
-        int pageSize = 32;
-
-        Page<Libro> librosBuscar = buscarLibrosEnBd(titulo, autor, idioma, idiomaQ, page);
-        if (librosBuscar != null) {
-            return librosBuscar;
-        }
-        // Utilizando el Patron Adapter - Patron Estructural
-        ResultadoBusquedaDTO resultado =
-                gutendexClient.buscar(tituloQ, autorQ, idiomaQ, page);
-
-        long totalElements = resultado.total();
-        List<LibroDTO> datos = resultado.resultados();
-        String urlConsultada = resultado.urlConsultada();
-
-        if (datos == null || datos.isEmpty()) {
-            return Page.empty();
-        }
-
-        List<Libro> libros = new ArrayList<>();
-        List<LibroPagina> libroPaginas = new ArrayList<>();
-
-
-        PaginasGuardadas paginaConsultada = new PaginasGuardadas(
-                null, idiomaQ, page, totalElements, LocalDateTime.now(), urlConsultada, libroPaginas
-        );
-
-        for (LibroDTO libroDTO : datos) {
-
-            Libro libro = libroFactory.crearLibroDesdeDTO(libroDTO);
-
-
-            if (libroDTO.autor() != null && !libroDTO.autor().isEmpty()) {
-
-                AutorDTO autorDTO = libroDTO.autor().get(0);
-                Autor autorEntity = autorFactory.crearAutorDesdeDTO(autorDTO);
-
-                String nombreOriginal = autorEntity.getNombre();
-                String[] partes = nombreOriginal.split(",");
-                if (partes.length == 2) {
-                    autorEntity.setNombre(partes[1].trim() + " " + partes[0].trim());
-                }
-
-                Autor finalAutor = autorEntity;
-
-                autorEntity = autorRepository.findByNombre(autorEntity.getNombre())
-                        .orElseGet(() -> autorRepository.save(finalAutor));
-
-                libro.setDescripcion("");
-                libro.setCategorias(new ArrayList<>());
-                libro.setAutor(autorEntity);
-            }
-
-            Optional<Libro> libroBuscar = libroRepository.findByTitulo(libro.getTitulo().trim());
-            if (libroBuscar.isPresent()) {
-                libro = libroBuscar.get();
-            }
-
-            Libro finalLibro = libro;
-
-            boolean yaExiste = paginaConsultada.getLibroPaginas().stream()
-                    .anyMatch(lp -> {
-                        Libro libroExistente = lp.getLibro();
-
-                        if (libroExistente.getId() == null || finalLibro.getId() == null) {
-                            return libroExistente.getTitulo().equalsIgnoreCase(finalLibro.getTitulo());
-                        }
-
-                        return libroExistente.getId().equals(finalLibro.getId());
-                    });
-
-            if (!yaExiste) {
-                LibroPagina libroPagina = new LibroPagina(null, libro, paginaConsultada);
-                paginaConsultada.getLibroPaginas().add(libroPagina);
-            }
-
-            libros.add(libro);
-        }
-
-        paginasGuardadasRepository.save(paginaConsultada);
-
-        return new PageImpl<>(libros, PageRequest.of(page - 1, pageSize), totalElements);
-    }
 
 
 
@@ -622,5 +544,15 @@ public class LibroServiceImpl implements ILibroService {
         return new PageImpl<>(pageContent, PageRequest.of(page - 1, pageSize), total);
     }
 
+
+
+
+
+    @Override
+    @Transactional
+    public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page) throws IOException {
+        IStrategyBusqueda strategy = strategySelector.seleccionar(titulo, autor, idioma);
+        return strategy.buscar(titulo, autor, idioma, page, this);
+    }
 
 }
