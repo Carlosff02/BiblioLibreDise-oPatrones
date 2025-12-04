@@ -22,10 +22,6 @@ public class GutendexHttpAdapter implements GutendexClient{
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Override
-    public List<LibroDTO> buscarLibrosPorIdioma(String idioma, int page) {
-        return List.of();
-    }
 
     @Override
     public ResultadoBusquedaDTO buscar(String titulo, String autor, String idiomaNormalizado, int page) {
@@ -35,12 +31,12 @@ public class GutendexHttpAdapter implements GutendexClient{
             StringBuilder url = new StringBuilder(baseUrl);
             url.append("?page=").append(page);
 
-            // ✔ Idioma opcional (igual que tu método)
+
             if (idiomaNormalizado != null && !idiomaNormalizado.isEmpty() && !idiomaNormalizado.equals("todos")) {
                 url.append("&languages=").append(idiomaNormalizado);
             }
 
-            // ✔ Construcción EXACTA del search
+
             String tituloQ = titulo != null ? titulo.trim().toLowerCase() : "";
             String autorQ = autor != null ? autor.trim().toLowerCase() : "";
 
@@ -79,20 +75,5 @@ public class GutendexHttpAdapter implements GutendexClient{
         }
     }
 
-    @Override
-    public LibroDTO buscarPorId(long id) {
-        try {
-            String url = "https://gutendex.com/books/" + id;
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
 
-            HttpResponse<String> response = client.send(req, HttpResponse.BodyHandlers.ofString());
-            return mapper.readValue(response.body(), LibroDTO.class);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error consultando Gutendex por ID", e);
-        }
-    }
 }

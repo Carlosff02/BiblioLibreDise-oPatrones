@@ -9,6 +9,10 @@ import com.example.biblo.domain.models.Autor;
 import com.example.biblo.domain.models.Libro;
 import com.example.biblo.domain.models.LibroPagina;
 import com.example.biblo.domain.models.PaginasGuardadas;
+import com.example.biblo.domain.service.ILibroCacheService;
+import com.example.biblo.domain.service.ILibroService;
+import com.example.biblo.domain.service.ITraduccionService;
+import com.example.biblo.domain.service.Normalizer;
 import com.example.biblo.infraestructure.external.gutendex.GutendexClient;
 import com.example.biblo.infraestructure.repository.AutorRepository;
 import com.example.biblo.infraestructure.repository.LibroRepository;
@@ -43,10 +47,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class LibroService {
+public class LibroServiceImpl implements ILibroService {
 
     // Principio de Inversión de Dependencias
     private final GutendexClient gutendexClient;
+    private final ILibroCacheService libroCacheService;
+    private final ITraduccionService traduccionService;
+
     private final LibroFactory libroFactory;
     private final AutorFactory autorFactory;
     private final LibroRepository libroRepository;
@@ -54,6 +61,8 @@ public class LibroService {
     private final PaginasGuardadasRepository paginasGuardadasRepository;
     @PersistenceContext
     private EntityManager entityManager;
+    private final Normalizer textoNormalizer = new TextNormalizer();
+    private final Normalizer idiomaNormalizer = new IdiomaNormalizer();
 
 
     @Transactional
@@ -499,40 +508,21 @@ public class LibroService {
         return null;
     }
 
+    private String normalizarTexto(String valor) {
+        return valor != null ? valor.trim().toLowerCase() : "";
+    }
+
+
+
+
+
     @Transactional
-    public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page)
-            throws IOException {
+    public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page) {
 
-        String tituloQ = titulo != null ? titulo.trim().toLowerCase() : "";
-        String autorQ = autor != null ? autor.trim().toLowerCase() : "";
-        String idiomaQ = idioma != null ? idioma.trim().toLowerCase() : "";
-
+        String tituloQ = textoNormalizer.normalize(titulo);
+        String autorQ  = textoNormalizer.normalize(autor);
+        String idiomaQ = idiomaNormalizer.normalize(idioma);
         int pageSize = 32;
-
-        if (!idiomaQ.isEmpty() && !idiomaQ.equals("todos")) {
-            switch (idiomaQ.toLowerCase()) {
-                case "español", "es", "castellano" -> idiomaQ = "es";
-                case "english", "ingles", "en" -> idiomaQ = "en";
-                case "french", "francés", "fr" -> idiomaQ = "fr";
-                case "deutsch", "aleman", "de" -> idiomaQ = "de";
-                case "italian", "italiano", "it" -> idiomaQ = "it";
-                case "portuguese", "portugues", "pt" -> idiomaQ = "pt";
-                case "dutch", "neerlandes", "holandes", "nl" -> idiomaQ = "nl";
-                case "danish", "danes", "da" -> idiomaQ = "da";
-                case "swedish", "sueco", "sv" -> idiomaQ = "sv";
-                case "norwegian", "noruego", "no" -> idiomaQ = "no";
-                case "finnish", "finlandes", "fi" -> idiomaQ = "fi";
-                case "greek", "griego", "el" -> idiomaQ = "el";
-                case "latin", "la" -> idiomaQ = "la";
-                case "polish", "polaco", "pl" -> idiomaQ = "pl";
-                case "russian", "ruso", "ru" -> idiomaQ = "ru";
-                case "chinese", "chino", "zh" -> idiomaQ = "zh";
-                case "japanese", "japones", "ja" -> idiomaQ = "ja";
-                case "arabic", "arabe", "ar" -> idiomaQ = "ar";
-                case "hungarian", "hungaro", "hu" -> idiomaQ = "hu";
-                case "czech", "checo", "cs" -> idiomaQ = "cs";
-            }
-        }
 
         Page<Libro> librosBuscar = buscarLibrosEnBd(titulo, autor, idioma, idiomaQ, page);
         if (librosBuscar != null) {
@@ -552,6 +542,7 @@ public class LibroService {
 
         List<Libro> libros = new ArrayList<>();
         List<LibroPagina> libroPaginas = new ArrayList<>();
+
 
         PaginasGuardadas paginaConsultada = new PaginasGuardadas(
                 null, idiomaQ, page, totalElements, LocalDateTime.now(), urlConsultada, libroPaginas

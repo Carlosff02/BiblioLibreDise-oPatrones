@@ -6,8 +6,7 @@ import com.example.biblo.application.dto.ResultadoBusquedaDTO;
 import java.util.List;
 
 // Aplicación del patrón Adapter - Patron Estructural
+// Principio de Segregación de Interfaces
 public interface GutendexClient {
-    List<LibroDTO> buscarLibrosPorIdioma(String idioma, int page);
     ResultadoBusquedaDTO buscar(String titulo, String autor, String idiomaNormalizado, int page);
-    LibroDTO buscarPorId(long id);
 }

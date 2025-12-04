@@ -1,6 +1,7 @@
 package com.example.biblo.domain.models;
 
 import com.example.biblo.application.dto.AutorDTO;
+import com.example.biblo.infraestructure.utils.generics.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,14 +16,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Autor {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Autor extends BaseEntity<Long> {
     private String nombre;
     private String fechanacimiento;
     private String fechafallecimiento;
-
-
-
 }

@@ -2,6 +2,7 @@ package com.example.biblo.application.service;
 
 import com.example.biblo.domain.models.Libro;
 import com.example.biblo.domain.models.PaginaLibroUsuario;
+import com.example.biblo.domain.service.ILibroPaginaUsuarioService;
 import com.example.biblo.infraestructure.repository.LibroPaginaUsuarioRepository;
 import com.example.biblo.infraestructure.repository.LibroRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class LibroPaginaUsuarioService {
+public class LibroPaginaUsuarioServiceImpl implements ILibroPaginaUsuarioService  {
 
     private final LibroPaginaUsuarioRepository repository;
     private final LibroRepository libroRepository;
@@ -26,11 +27,9 @@ public class LibroPaginaUsuarioService {
     }
     public void guardarPaginaPorUsuarioYLibro(String titulo, Long usuarioId,String cfi){
         Optional<Libro> libro = libroRepository.findByTitulo(titulo);
-        System.out.println("Libro");
-        System.out.println(libro.isPresent());
         if(libro.isPresent()){
             Optional<PaginaLibroUsuario> paginaLibroUsuarioBuscar = repository.buscarPorUsuarioIdAndLibroId(libro.get().getId(),usuarioId);
-            System.out.println(paginaLibroUsuarioBuscar.isPresent());
+
             if(paginaLibroUsuarioBuscar.isPresent()){
                 paginaLibroUsuarioBuscar.get().setCfi(cfi);
                 repository.save(paginaLibroUsuarioBuscar.get());
