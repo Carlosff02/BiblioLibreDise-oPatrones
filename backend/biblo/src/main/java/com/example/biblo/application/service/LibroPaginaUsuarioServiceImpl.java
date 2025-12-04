@@ -19,7 +19,7 @@ public class LibroPaginaUsuarioService {
     public String buscarPaginaPorUsuarioYLibro(String titulo, Long usuarioId){
         Optional<Libro> libro = libroRepository.findByTitulo(titulo);
         if(libro.isPresent()){
-            String paginaLibroUsuario = repository.buscarPaginaPorUsuarioIdYLibroId(libro.get().getIdlibro(),usuarioId);
+            String paginaLibroUsuario = repository.buscarPaginaPorUsuarioIdYLibroId(libro.get().getId(),usuarioId);
             return paginaLibroUsuario;
         }
         return null;
@@ -29,13 +29,13 @@ public class LibroPaginaUsuarioService {
         System.out.println("Libro");
         System.out.println(libro.isPresent());
         if(libro.isPresent()){
-            Optional<PaginaLibroUsuario> paginaLibroUsuarioBuscar = repository.buscarPorUsuarioIdAndLibroId(libro.get().getIdlibro(),usuarioId);
+            Optional<PaginaLibroUsuario> paginaLibroUsuarioBuscar = repository.buscarPorUsuarioIdAndLibroId(libro.get().getId(),usuarioId);
             System.out.println(paginaLibroUsuarioBuscar.isPresent());
             if(paginaLibroUsuarioBuscar.isPresent()){
                 paginaLibroUsuarioBuscar.get().setCfi(cfi);
                 repository.save(paginaLibroUsuarioBuscar.get());
             } else {
-                PaginaLibroUsuario paginaLibroUsuario = new PaginaLibroUsuario(null, usuarioId, libro.get().getIdlibro(), cfi);
+                PaginaLibroUsuario paginaLibroUsuario = new PaginaLibroUsuario(null, usuarioId, libro.get().getId(), cfi);
                 System.out.println("guardar");
                 repository.save(paginaLibroUsuario);
             }
