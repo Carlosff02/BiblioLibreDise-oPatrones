@@ -18,6 +18,6 @@ public class BuscarPorIdiomaCommand implements BuscarCommand {
 
     @Override
     public Page<Libro> ejecutar() throws Exception {
-        return service.buscarLibros(null, null, idioma, page);
+        return service.buscarPorIdioma(idioma, page);
     }
 }

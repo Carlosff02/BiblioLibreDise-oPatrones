@@ -2,6 +2,8 @@ package com.example.biblo.domain.command;
 
 import com.example.biblo.application.service.LibroServiceImpl;
 
+//Es quien recibe la solicitud de búsqueda
+// y decide qué comando ejecutar.
 public class BuscarInvoker {
 
     public BuscarCommand build(

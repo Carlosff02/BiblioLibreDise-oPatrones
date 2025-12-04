@@ -553,7 +553,8 @@ public class LibroServiceImpl implements ILibroService {
 
 
 
-
+    //Es quien realmente realiza la búsqueda, accede
+    // a la base de datos, Gutendex, etc.
 
     @Override
     public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page) throws IOException {

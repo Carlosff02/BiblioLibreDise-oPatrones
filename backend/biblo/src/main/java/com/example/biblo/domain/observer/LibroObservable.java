@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+
+//Mantiene una lista de observadores
+
 @Component
 public class LibroObservable implements ILibroObservable {
 
