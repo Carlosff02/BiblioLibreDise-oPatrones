@@ -3,6 +3,8 @@ package com.example.biblo.application.service;
 import com.example.biblo.application.dto.AutorDTO;
 import com.example.biblo.application.dto.LibroDTO;
 import com.example.biblo.application.dto.ResultadoBusquedaDTO;
+import com.example.biblo.domain.command.BuscarCommand;
+import com.example.biblo.domain.command.BuscarInvoker;
 import com.example.biblo.domain.factory.AutorFactory;
 import com.example.biblo.domain.factory.LibroFactory;
 import com.example.biblo.domain.models.Autor;
@@ -554,10 +556,16 @@ public class LibroServiceImpl implements ILibroService {
 
 
     @Override
-    @Transactional
     public Page<Libro> buscarLibros(String titulo, String autor, String idioma, int page) throws IOException {
-        IStrategyBusqueda strategy = strategySelector.seleccionar(titulo, autor, idioma);
-        return strategy.buscar(titulo, autor, idioma, page, this);
+        BuscarInvoker invoker = new BuscarInvoker();
+        BuscarCommand command = invoker.build(titulo, autor, idioma, page, this);
+
+        try {
+            return command.ejecutar();
+        } catch (Exception e) {
+            throw new IOException("Error ejecutando command de búsqueda", e);
+        }
     }
+
 
 }
