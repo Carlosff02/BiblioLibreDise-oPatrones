@@ -9,12 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LibroRepository extends JpaRepository<Libro, Long> {
-    List<Libro> findByIdioma(String idioma);
 
     Optional<Libro> findByTitulo(String titulo);
 
     @Query(value = """
-            SELECT * FROM libro
+            SELECT * FROM public.libro WHERE epub_local_path IS NULL
             ORDER BY descargas DESC LIMIT 10
             """, nativeQuery = true)
     List<Libro> buscarLibrosPopulares();
@@ -26,7 +25,7 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     @Query("""
         SELECT DISTINCT l FROM Libro l
         LEFT JOIN FETCH l.autor a
-        WHERE LOWER(l.idioma) = LOWER(:idioma)
+        WHERE LOWER(l.idioma) = LOWER(:idioma) 
     """)
     Optional<List<Libro>> buscarPorIdioma(@Param("idioma") String idioma);
 

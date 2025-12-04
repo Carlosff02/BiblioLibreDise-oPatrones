@@ -1,7 +1,7 @@
 package com.example.biblo.application.controller;
 
 import com.example.biblo.domain.models.Libro;
-import com.example.biblo.application.service.LibroService;
+import com.example.biblo.domain.service.ILibroService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,8 @@ import java.util.List;
 @CrossOrigin("*")
 public class LibroController {
 
-    private final LibroService libroService;
+    // Principio de Inversion de Dependencias
+    private final ILibroService libroService;
 
     @GetMapping("/buscar-por-nombre")
     public Libro buscarPorNombre(@RequestParam String nombreLibro) throws IOException, InterruptedException {

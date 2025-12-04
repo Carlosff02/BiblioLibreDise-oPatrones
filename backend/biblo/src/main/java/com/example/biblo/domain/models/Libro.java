@@ -1,6 +1,7 @@
 package com.example.biblo.domain.models;
 
 import com.example.biblo.application.dto.LibroDTO;
+import com.example.biblo.infraestructure.utils.generics.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -17,11 +18,8 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Libro {
+public class Libro extends BaseEntity<Long> {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idlibro;
     @Column(length = 5000)
     private String titulo;
 
