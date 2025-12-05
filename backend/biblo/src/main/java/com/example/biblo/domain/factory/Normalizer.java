@@ -1,4 +1,4 @@
-package com.example.biblo.domain.service;
+package com.example.biblo.domain.factory;
 
 // Principio SRP
 // Principio Inversión de Dependencias

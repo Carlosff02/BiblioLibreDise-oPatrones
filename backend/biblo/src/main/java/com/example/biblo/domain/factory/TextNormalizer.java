@@ -1,6 +1,5 @@
-package com.example.biblo.application.service;
+package com.example.biblo.domain.factory;
 
-import com.example.biblo.domain.service.Normalizer;
 import org.springframework.stereotype.Component;
 
 @Component
