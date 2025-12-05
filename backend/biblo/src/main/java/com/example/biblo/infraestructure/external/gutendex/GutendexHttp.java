@@ -17,7 +17,7 @@ import java.util.List;
 
 // Aplicación del patrón Adapter - Patron Estructural
 @Component
-public class GutendexHttpAdapter implements GutendexClient{
+public class GutendexHttp implements GutendexClient{
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();

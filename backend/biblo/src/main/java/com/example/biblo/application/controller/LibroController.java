@@ -20,7 +20,7 @@ public class LibroController {
 
     @GetMapping("/buscar-por-nombre")
     public Libro buscarPorNombre(@RequestParam String nombreLibro) throws IOException, InterruptedException {
-        System.out.println(nombreLibro);
+
         return libroService.buscarLibro(nombreLibro);
     }
 

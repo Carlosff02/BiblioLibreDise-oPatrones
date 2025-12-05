@@ -7,6 +7,7 @@ import com.example.biblo.domain.command.BuscarCommand;
 import com.example.biblo.domain.command.BuscarInvoker;
 import com.example.biblo.domain.factory.AutorFactory;
 import com.example.biblo.domain.factory.LibroFactory;
+import com.example.biblo.domain.factory.NormalizerFactory;
 import com.example.biblo.domain.models.Autor;
 import com.example.biblo.domain.models.Libro;
 import com.example.biblo.domain.models.LibroPagina;
@@ -15,8 +16,7 @@ import com.example.biblo.domain.observer.LibroObservable;
 import com.example.biblo.domain.service.ILibroCacheService;
 import com.example.biblo.domain.service.ILibroService;
 import com.example.biblo.domain.service.ITraduccionService;
-import com.example.biblo.domain.service.Normalizer;
-import com.example.biblo.domain.strategy.IStrategyBusqueda;
+import com.example.biblo.domain.factory.Normalizer;
 import com.example.biblo.domain.strategy.StrategySelector;
 import com.example.biblo.infraestructure.external.gutendex.GutendexClient;
 import com.example.biblo.infraestructure.repository.AutorRepository;
@@ -66,8 +66,8 @@ public class LibroServiceImpl implements ILibroService {
     private final PaginasGuardadasRepository paginasGuardadasRepository;
     @PersistenceContext
     private EntityManager entityManager;
-    private final Normalizer textoNormalizer = new TextNormalizer();
-    private final Normalizer idiomaNormalizer = new IdiomaNormalizer();
+    private final Normalizer textoNormalizer = NormalizerFactory.createNormalizer("texto");
+    private final Normalizer idiomaNormalizer = NormalizerFactory.createNormalizer("idioma");
     private final LibroObservable observable;
 
     private final StrategySelector strategySelector;
@@ -77,7 +77,7 @@ public class LibroServiceImpl implements ILibroService {
     public Page<Libro> buscarPorIdioma(String idioma, int page)
             throws IOException, InterruptedException {
 
-        String idiomaNormalizado = normalizarIdioma(idioma);
+        String idiomaNormalizado = idiomaNormalizer.normalize(idioma);
         if (idiomaNormalizado == null) return Page.empty();
 
         int pageSize = 32;
@@ -341,35 +341,6 @@ public class LibroServiceImpl implements ILibroService {
 
 
 
-    private String obtenerDescripcionDesdeGutendex(String titulo) {
-        try {
-            String url = "https://gutendex.com/books/?search=" + URLEncoder.encode(titulo, StandardCharsets.UTF_8);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-
-            HttpClient client = HttpClient.newHttpClient();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            String json = response.body();
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(json);
-            JsonNode results = root.path("results");
-
-            if (results.isArray() && results.size() > 0) {
-                JsonNode primerLibro = results.get(0);
-                JsonNode summaries = primerLibro.path("summaries");
-                if (summaries.isArray() && summaries.size() > 0) {
-                    return summaries.get(0).asText();
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            System.out.println("⚠️ Error al obtener descripción desde Gutendex: " + e.getMessage());
-            return null;
-        }
-    }
 
 
     private String traducirADescripcionEspanol(String textoOriginal, String idiomaOrigen) {
@@ -457,18 +428,9 @@ public class LibroServiceImpl implements ILibroService {
     }
 
 
-
-    private String normalizarTexto(String valor) {
-        return valor != null ? valor.trim().toLowerCase() : "";
-    }
-
-
-
-
-
     public Page<Libro> buscarLibrosEnBd(String titulo, String autor, String idioma, String idiomaQ, int page) {
-        String tituloQ = titulo != null ? titulo.trim().toLowerCase() : "";
-        String autorQ = autor != null ? autor.trim().toLowerCase() : "";
+        String tituloQ = textoNormalizer.normalize(titulo);
+        String autorQ = textoNormalizer.normalize(autor);
         int pageSize = 32;
 
         System.out.println(idiomaQ);
